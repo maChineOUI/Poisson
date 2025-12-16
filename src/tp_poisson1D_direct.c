@@ -105,9 +105,27 @@ int main(int argc,char *argv[])
   }
 
   /* Alternative: solve directly using dgbsv */
+  // if (IMPLEM == SV) {
+  //   // TODO : use dgbsv
+  // }
+
   if (IMPLEM == SV) {
-    // TODO : use dgbsv
+
+    // Solve the linear system using LAPACK all-in-one solver dgbsv
+    // 使用 LAPACK 的一体化求解器 dgbsv 求解线性系统（LU 分解 + 回代）
+    dgbsv_(&la, &kl, &ku, &NRHS,
+          AB, &lab, ipiv,
+          RHS, &la, &info);
+
+    // Check LAPACK return code
+    // 检查 LAPACK 返回的错误信息
+    if (info != 0) {
+      // info > 0 : zero pivot encountered
+      // info > 0 ：在 LU 分解过程中遇到零主元
+      printf("\n INFO DGBSV = %d\n", info);
+    }
   }
+
 
   /* Write results to files */
   write_GB_operator_colMajor_poisson1D(AB, &lab, &la, "LU.dat");  /* LU factors */
