@@ -170,34 +170,56 @@ int indexABCol(int i, int j, int *lab)
 // 不使用主元选取（Poisson 1D 为对称正定）
 
 int dgbtrftridiag(int *la, int *n, int *kl, int *ku,
-                  double *AB, int *lab,
-                  int *ipiv, int *info)
-{
-    *info = 0;
+                  double *AB, int *lab, int *ipiv, int *info){
+  int N    = *n;
+  int ldab = *lab;
+  int KL   = *kl;
+  int KU   = *ku;
+  (void)ldab;  
 
-    int row_super = 1;   // 上对角
-    int row_diag  = 2;   // 主对角
-    int row_sub   = 3;   // 下对角
+  if (KL != 1 || KU != 1) {
+    *info = -1;
+    return *info;
+  }
 
-    for (int j = 0; j < *la - 1; j++) {
 
-        double pivot = AB[indexABCol(row_diag, j, lab)];
-        if (pivot == 0.0) {
-            *info = j + 1;
-            return *info;
-        }
+  int row_super = 1;  
+  int row_diag  = 2;  // A(i,   i) / U(i,   i)
+  int row_sub   = 3;  // A(i+1, i) / L(i+1, i)
 
-        // Compute L(j+1,j)
-        // 计算下三角因子 L(j+1,j)
-        AB[indexABCol(row_sub, j, lab)] /= pivot;
+  for (int i = 0; i < N; i++){
+    ipiv[i] = i + 1;
+  }
 
-        // Update U(j+1,j+1)
-        // 更新下一行的对角元素
-        AB[indexABCol(row_diag, j + 1, lab)] -=
-            AB[indexABCol(row_sub, j, lab)] *
-            AB[indexABCol(row_super, j + 1, lab)];
+  *info = 0;
+
+  for (int j = 0; j < N - 1; j++){
+    double *diag_j_ptr = &AB[indexABCol(row_diag, j, lab)];
+    double  diag_j     = *diag_j_ptr;
+
+
+    if (fabs(diag_j) < DBL_EPSILON){
+      *info = j + 1;
+      return *info;
     }
 
-    return *info;
-}
+    // L(j+1, j) = A(j+1, j) / U(j, j)
+    double *sub_j_ptr = &AB[indexABCol(row_sub, j, lab)];
+    double  l         = (*sub_j_ptr) / diag_j;
+    *sub_j_ptr        = l;
 
+
+    double super_j = AB[indexABCol(row_super, j + 1, lab)];
+
+    // U(j+1, j+1) = A(j+1, j+1) - L(j+1, j) * U(j, j+1)
+    double *diag_j1_ptr = &AB[indexABCol(row_diag, j + 1, lab)];
+    *diag_j1_ptr -= l * super_j;
+  }
+
+  double last_diag = AB[indexABCol(row_diag, N - 1, lab)];
+  if (fabs(last_diag) < DBL_EPSILON){
+    *info = N;
+  }
+
+  return *info;
+}
