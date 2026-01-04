@@ -1,17 +1,13 @@
-# build products
-bin/
-*.o
-*.a
-*.so
+# build artifacts (any subdir)
+**/build/
+**/bin/
+**/*.o
+**/*.a
+**/*.so
+**/*.dylib
+**/*.exe
 
-# data/output files
-*.dat
-
-# editor / OS
+# OS / editor
 .DS_Store
 .vscode/
 .idea/
-
-# docker leftovers
-*.log
-
